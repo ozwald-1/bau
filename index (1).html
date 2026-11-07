@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>NESCAFE SQUAD — Tokyo Ghoul Discord Server</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ghoul: {
+                            bg: '#0a0a0c',
+                            card: '#121216',
+                            border: '#272732',
+                            red: '#e50914',
+                            crimson: '#ff003c',
+                            darkred: '#7f1d1d',
+                            muted: '#9ca3af'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Rajdhani', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'neon': '0 0 25px rgba(229, 9, 20, 0.35)',
+                        'neon-lg': '0 0 45px rgba(229, 9, 20, 0.55)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+                    },
+                    screens: {
+                        'xs': '400px'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Touch & Fluid Optimizations */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            touch-action: manipulation;
+        }
+
+        /* Responsive typography with clamp */
+        .text-hero-title {
+            font-size: clamp(2.25rem, 6.5vw + 0.5rem, 4.75rem);
+            line-height: 1.05;
+        }
+
+        /* Dynamic viewport fix for mobile browser bars */
+        .min-h-screen-dvh {
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #272732;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e50914;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 5s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 15px rgba(229,9,20,0.4)); }
+            50% { opacity: 0.8; filter: drop-shadow(0 0 30px rgba(229,9,20,0.8)); }
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        .glass-panel {
+            background: rgba(18, 18, 22, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover:hover {
+            border-color: rgba(229, 9, 20, 0.5);
+            box-shadow: 0 0 25px rgba(229, 9, 20, 0.25);
+        }
+
+        /* Minimum touch target utility */
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+    </style>
+</head>
+<body class="bg-ghoul-bg text-gray-100 font-sans min-h-screen-dvh relative overflow-x-hidden selection:bg-ghoul-red selection:text-white">
+
+    <!-- Background Canvas for Kagune Embers -->
+    <canvas id="particleCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-40 w-full h-full"></canvas>
+
+    <!-- Ambient Crimson Glow Blobs -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-ghoul-red/10 rounded-full blur-[100px] sm:blur-[140px] pointer-events-none z-0 animate-pulse-glow"></div>
+    <div class="fixed bottom-1/4 right-0 w-80 sm:w-[450px] h-80 sm:h-[450px] bg-red-950/15 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+    <!-- Audio Control Floating Widget (Responsive Mobile & Desktop Position) -->
+    <div class="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50 flex items-center">
+        <div class="glass-panel px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl border border-ghoul-red/40 shadow-neon flex items-center space-x-2.5 bg-ghoul-card/95 backdrop-blur-md">
+            <button id="sfx-toggle-btn" onclick="toggleSFX()" aria-label="Toggle Sound Effects" class="touch-target w-9 h-9 rounded-xl bg-ghoul-red/20 text-ghoul-red border border-ghoul-red/40 flex items-center justify-center hover:bg-ghoul-red hover:text-white transition-all duration-300 active:scale-95">
+                <i id="sfx-icon" class="fa-solid fa-volume-high text-xs sm:text-sm"></i>
+            </button>
+            <div class="hidden xs:flex flex-col">
+                <span class="text-[9px] sm:text-[10px] font-bold tracking-widest text-gray-400 uppercase">GUI SOUNDS</span>
+                <span id="sfx-status" class="text-xs font-bold text-ghoul-red">SFX: ON</span>
+            </div>
+            <input type="range" id="sfx-volume" min="0" max="1" step="0.05" value="0.3" oninput="updateVolume(this.value)" aria-label="Volume Slider" class="w-12 xs:w-16 accent-ghoul-red cursor-pointer touch-target">
+        </div>
+    </div>
+
+    <!-- Custom Animated Toast Notification -->
+    <div id="toast" class="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 transform translate-y-28 opacity-0 transition-all duration-300 ease-out max-w-[calc(100vw-2rem)] sm:max-w-md">
+        <div class="glass-panel px-4 py-3 sm:px-5 sm:py-4 rounded-xl border border-ghoul-red/50 shadow-neon flex items-center space-x-3 bg-ghoul-card/95">
+            <div class="w-8 h-8 rounded-full bg-ghoul-red/20 flex items-center justify-center text-ghoul-red shrink-0">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="min-w-0">
+                <h4 class="font-bold text-xs sm:text-sm text-white truncate" id="toast-title">Mengarahkan ke Discord...</h4>
+                <p class="text-[11px] sm:text-xs text-gray-400 truncate" id="toast-desc">Membuka tautan undangan NESCAFE SQUAD.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobile-drawer" class="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 hidden opacity-0 transition-opacity duration-300 flex flex-col justify-between p-6 md:hidden">
+        <div class="flex items-center justify-between border-b border-ghoul-border/60 pb-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-ghoul-red flex items-center justify-center text-white shadow-neon">
+                    <i class="fa-solid fa-mug-hot text-base"></i>
+                </div>
+                <span class="font-rajdhani font-bold text-xl text-white uppercase tracking-wider">NESCAFE SQUAD</span>
+            </div>
+            <button onclick="toggleMobileMenu()" class="touch-target w-10 h-10 rounded-xl glass-panel text-gray-300 flex items-center justify-center hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <nav class="flex flex-col space-y-6 text-center text-lg font-rajdhani font-bold tracking-wider uppercase my-auto">
+            <a href="#hero" onclick="toggleMobileMenu(); playSFX('click')" class="hover:text-ghoul-red transition-colors py-2 border-b border-ghoul-border/30">Beranda</a>
+            <a href="#showcase" onclick="toggleMobileMenu(); playSFX('click')" class="hover:text-ghoul-red transition-colors py-2 border-b border-ghoul-border/30">Channel</a>
+            <a href="#rules" onclick="toggleMobileMenu(); playSFX('click')" class="hover:text-ghoul-red transition-colors py-2 border-b border-ghoul-border/30">Peraturan</a>
+            <a href="#community" onclick="toggleMobileMenu(); playSFX('click')" class="hover:text-ghoul-red transition-colors py-2">Komunitas</a>
+        </nav>
+
+        <div class="space-y-3 pt-4 border-t border-ghoul-border/60">
+            <button onclick="goToDiscord(); toggleMobileMenu();" class="touch-target w-full py-3.5 rounded-xl bg-ghoul-red text-white font-bold tracking-wide uppercase shadow-neon flex items-center justify-center space-x-2">
+                <i class="fa-brands fa-discord text-lg"></i>
+                <span>Gabung Discord Server</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-ghoul-border/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 group cursor-pointer" onmouseenter="playSFX('hover')" onclick="playSFX('click')">
+                <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-ghoul-red to-black border border-ghoul-red/50 flex items-center justify-center shadow-neon group-hover:scale-105 transition-transform duration-300 shrink-0">
+                    <i class="fa-solid fa-mug-hot text-white text-sm sm:text-lg"></i>
+                </div>
+                <div>
+                    <span class="font-rajdhani font-bold text-lg sm:text-xl tracking-wider text-white block uppercase leading-tight">NESCAFE SQUAD</span>
+                    <span class="text-[9px] sm:text-[10px] tracking-widest text-ghoul-red uppercase font-semibold block -mt-0.5"><i class="fa-solid fa-handshake text-[8px] mr-1"></i>x Sekawan Pulau Jawa</span>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center space-x-6 lg:space-x-8 text-sm font-medium text-gray-300">
+                <a href="#hero" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="hover:text-ghoul-red transition-colors">Beranda</a>
+                <a href="#showcase" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="hover:text-ghoul-red transition-colors">Channel</a>
+                <a href="#rules" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="hover:text-ghoul-red transition-colors">Peraturan</a>
+                <a href="#community" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="hover:text-ghoul-red transition-colors">Komunitas</a>
+            </nav>
+
+            <!-- Desktop CTA & Mobile Toggle Button -->
+            <div class="flex items-center space-x-3">
+                <button onclick="goToDiscord()" onmouseenter="playSFX('hover')" class="hidden sm:relative group overflow-hidden rounded-xl p-[1px] font-semibold touch-target">
+                    <span class="absolute inset-0 bg-gradient-to-r from-ghoul-red to-rose-600 group-hover:opacity-90 transition-opacity"></span>
+                    <span class="relative px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-ghoul-bg flex items-center space-x-2 text-xs sm:text-sm text-white group-hover:bg-opacity-0 transition-all duration-300">
+                        <i class="fa-brands fa-discord text-base"></i>
+                        <span>Gabung Server</span>
+                    </span>
+                </button>
+
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu(); playSFX('click')" aria-label="Open Mobile Menu" class="md:hidden touch-target w-10 h-10 rounded-xl glass-panel text-white flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="hero" class="relative pt-8 pb-16 sm:pt-16 sm:pb-24 lg:pt-24 lg:pb-32 overflow-hidden z-10">
+                    <!-- Dynamic Live Status Pill & Collaboration Badge -->
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3">
+                        <div class="inline-flex items-center space-x-2 sm:space-x-2.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full glass-panel border border-ghoul-red/30 shadow-neon text-[11px] sm:text-xs font-semibold text-gray-300 max-w-full">
+                            <span class="relative flex h-2 sm:h-2.5 w-2 sm:w-2.5 shrink-0">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-ghoul-red opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-ghoul-red"></span>
+                            </span>
+                            <span id="online-counter" class="text-white font-bold">1,420</span> 
+                            <span class="text-gray-400">Ghouls Online</span>
+                            <span class="text-ghoul-border">•</span>
+                            <span id="total-counter" class="text-gray-300">5,895 Member</span>
+                        </div>
+
+                        <!-- Collab Badge -->
+                        <div class="inline-flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full glass-panel border border-ghoul-red/50 bg-ghoul-red/10 text-[11px] sm:text-xs font-bold text-white tracking-wide shadow-neon">
+                            <i class="fa-solid fa-handshake text-ghoul-red animate-pulse"></i>
+                            <span>Collaborated with <span class="text-ghoul-red underline decoration-ghoul-red/40">Sekawan Pulau Jawa</span></span>
+                        </div>
+                    </div>
+
+                    <h1 class="font-rajdhani font-bold tracking-tight text-white uppercase text-hero-title">
+                        TEMPAT KOPI <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-ghoul-red via-rose-500 to-red-400 drop-shadow-[0_0_20px_rgba(229,9,20,0.5)]">MENYATU DENGAN KEGELAPAN</span>
+                    </h1>
+
+                    <p class="text-gray-400 text-sm sm:text-base lg:text-lg max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                        Selamat datang di tempat perlindungan digital Anteiku. NESCAFE SQUAD adalah komunitas gaming, mabar Roblox, tempat nongkrong, dan diskusi anime. Ambil secangkir kopi, kenakan topengmu, dan bergabunglah bersama kami.
+                    </p>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3.5 pt-2 sm:pt-4">
+                        <button onclick="goToDiscord()" onmouseenter="playSFX('hover')" class="touch-target w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-ghoul-red to-rose-700 text-white font-bold text-sm tracking-wide shadow-neon hover:shadow-neon-lg hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center space-x-3">
+                            <i class="fa-brands fa-discord text-xl"></i>
+                            <span>Gabung Nescafe Squad Sekarang</span>
+                        </button>
+                        <a href="#showcase" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="touch-target w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl glass-panel glass-panel-hover text-white font-semibold text-sm transition-all duration-300 flex items-center justify-center space-x-2">
+                            <span>Jelajahi Channel</span>
+                            <i class="fa-solid fa-arrow-down text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Responsive Feature Pills -->
+                    <div class="pt-6 grid grid-cols-3 gap-2 sm:gap-4 border-t border-ghoul-border/40 max-w-lg mx-auto lg:mx-0">
+                        <div class="text-center lg:text-left">
+                            <span class="block font-rajdhani font-bold text-xl sm:text-2xl text-white">24/7</span>
+                            <span class="text-[10px] sm:text-xs text-gray-400">VC Aktif & Musik</span>
+                        </div>
+                        <div class="text-center lg:text-left">
+                            <span class="block font-rajdhani font-bold text-xl sm:text-2xl text-ghoul-red">ROBLOX</span>
+                            <span class="text-[10px] sm:text-xs text-gray-400">& Game Night</span>
+                        </div>
+                        <div class="text-center lg:text-left">
+                            <span class="block font-rajdhani font-bold text-xl sm:text-2xl text-white">NITRO</span>
+                            <span class="text-[10px] sm:text-xs text-gray-400">Event Mingguan</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Responsive Discord Preview Card -->
+                <div class="lg:col-span-5 w-full">
+                    <div class="glass-panel rounded-2xl p-4 sm:p-6 shadow-2xl border border-ghoul-border relative animate-float max-w-md mx-auto lg:max-w-none">
+                        <!-- Server Card Header -->
+                        <div class="flex items-center space-x-3 sm:space-x-4 pb-4 sm:pb-6 border-b border-ghoul-border">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-ghoul-red to-black p-0.5 shadow-neon shrink-0">
+                                <div class="w-full h-full bg-ghoul-card rounded-[14px] flex items-center justify-center overflow-hidden">
+                                    <i class="fa-solid fa-mask text-ghoul-red text-xl sm:text-2xl"></i>
+                                </div>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="font-rajdhani font-bold text-xl sm:text-2xl text-white tracking-wide truncate">NESCAFE SQUAD</h3>
+                                    <span class="bg-ghoul-red/20 text-ghoul-red text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full border border-ghoul-red/30 shrink-0">TERVERIFIKASI</span>
+                                </div>
+                                <p class="text-xs text-gray-400 truncate">Undangan: <span class="text-gray-200 font-mono">nescafesquad</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Discord Member List Preview -->
+                        <div class="py-4 sm:py-5 space-y-2.5 sm:space-y-3">
+                            <span class="text-[10px] sm:text-[11px] font-bold tracking-wider text-gray-500 uppercase">GHOUL ONLINE — 4</span>
+                            
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                                <div class="flex items-center space-x-3 min-w-0">
+                                    <div class="relative shrink-0">
+                                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-950 border border-ghoul-red flex items-center justify-center font-bold text-ghoul-red text-xs sm:text-sm">K</div>
+                                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-ghoul-card"></div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h5 class="text-xs sm:text-sm font-semibold text-white truncate">Ken Kaneki</h5>
+                                        <p class="text-[9px] sm:text-[10px] text-ghoul-red truncate">Pemilik Server / King</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2 py-0.5 rounded bg-ghoul-red/10 text-ghoul-red font-mono shrink-0">👑</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                                <div class="flex items-center space-x-3 min-w-0">
+                                    <div class="relative shrink-0">
+                                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-gray-300 text-xs sm:text-sm">S</div>
+                                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-ghoul-card"></div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h5 class="text-xs sm:text-sm font-semibold text-white truncate">Sekawan Admin</h5>
+                                        <p class="text-[9px] sm:text-[10px] text-gray-400 truncate">Sekawan Pulau Jawa Partner</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-mono shrink-0">🤝</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                                <div class="flex items-center space-x-3 min-w-0">
+                                    <div class="relative shrink-0">
+                                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-gray-300 text-xs sm:text-sm">J</div>
+                                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-ghoul-card"></div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h5 class="text-xs sm:text-sm font-semibold text-white truncate">Juuzou Suzuya</h5>
+                                        <p class="text-[9px] sm:text-[10px] text-gray-400 truncate">Pro Player Roblox</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono shrink-0">🎮</span>
+                            </div>
+                        </div>
+
+                        <!-- Card Action Button -->
+                        <button onclick="goToDiscord()" onmouseenter="playSFX('hover')" class="touch-target w-full py-3 rounded-xl bg-ghoul-red hover:bg-rose-600 active:scale-95 text-white font-bold text-xs sm:text-sm tracking-wider uppercase shadow-neon transition-all duration-300 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>Gabung Langsung</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Channel Showcase Section (Tab System) -->
+    <section id="showcase" class="py-16 sm:py-24 relative z-10 border-t border-ghoul-border/50 bg-black/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 mb-10 sm:mb-16">
+                <span class="text-[10px] sm:text-xs font-bold tracking-widest text-ghoul-red uppercase px-3 py-1 rounded-full bg-ghoul-red/10 border border-ghoul-red/30">STRUKTUR SERVER</span>
+                <h2 class="font-rajdhani text-2xl sm:text-4xl lg:text-5xl font-bold text-white uppercase">JELAJAHI CHANNEL KAMI</h2>
+                <p class="text-gray-400 text-xs sm:text-base leading-relaxed">Lihat ruangan yang ada di dalam server. Dari tempat mabar game, bus spotting, nongkrong santai, hingga obrolan kopi.</p>
+            </div>
+
+            <!-- Responsive Tab Buttons -->
+            <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2 sm:gap-3 mb-8 sm:mb-10">
+                <button onclick="switchTab('general')" onmouseenter="playSFX('hover')" id="btn-general" class="touch-target tab-btn px-3 py-2.5 sm:px-5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 flex items-center justify-center space-x-2 bg-ghoul-red text-white shadow-neon">
+                    <i class="fa-solid fa-comments"></i>
+                    <span class="truncate">Lounge Umum</span>
+                </button>
+                <button onclick="switchTab('gaming')" onmouseenter="playSFX('hover')" id="btn-gaming" class="touch-target tab-btn px-3 py-2.5 sm:px-5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 flex items-center justify-center space-x-2 glass-panel text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <span class="truncate">Gaming & Roblox</span>
+                </button>
+                <button onclick="switchTab('busspotting')" onmouseenter="playSFX('hover')" id="btn-busspotting" class="touch-target tab-btn px-3 py-2.5 sm:px-5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 flex items-center justify-center space-x-2 glass-panel text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-bus"></i>
+                    <span class="truncate">Bus Spotting</span>
+                </button>
+                <button onclick="switchTab('announcements')" onmouseenter="playSFX('hover')" id="btn-announcements" class="touch-target tab-btn px-3 py-2.5 sm:px-5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 flex items-center justify-center space-x-2 glass-panel text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <span class="truncate">Pengumuman</span>
+                </button>
+            </div>
+
+            <!-- Tab Content Container -->
+            <div class="max-w-4xl mx-auto glass-panel rounded-2xl p-4 sm:p-8 border border-ghoul-border shadow-2xl relative overflow-hidden min-h-[340px] flex flex-col justify-between">
+                
+                <!-- Tab 1: General Lounge -->
+                <div id="tab-general" class="tab-content space-y-4 sm:space-y-6">
+                    <div class="flex items-center justify-between border-b border-ghoul-border pb-3 sm:pb-4">
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <span class="text-ghoul-red text-lg sm:text-xl font-bold">#</span>
+                            <h3 class="font-rajdhani text-lg sm:text-xl font-bold text-white tracking-wide">lounge-umum</h3>
+                        </div>
+                        <span class="text-[10px] sm:text-xs text-gray-400 bg-white/5 px-2.5 py-1 rounded-full">Lounge Utama</span>
+                    </div>
+                    
+                    <div class="space-y-3 font-sans text-xs sm:text-sm">
+                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-900 flex items-center justify-center font-bold text-white shrink-0 text-xs sm:text-base">KK</div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white">Ken Kaneki</span>
+                                    <span class="text-[9px] sm:text-[10px] text-gray-500">Hari ini 14:10</span>
+                                </div>
+                                <p class="text-gray-300 mt-0.5 leading-relaxed">Selamat datang semuanya di NESCAFE SQUAD x Sekawan Pulau Jawa! Seduh kopi kalian dan nikmati suasana santai di sini ☕🔥</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-900 flex items-center justify-center font-bold text-white shrink-0 text-xs sm:text-base">SK</div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white">Sekawan Staff</span>
+                                    <span class="text-[9px] sm:text-[10px] text-gray-500">Hari ini 14:12</span>
+                                </div>
+                                <p class="text-gray-300 mt-0.5 leading-relaxed">Ingat ya teman-teman, dilarang rusuh dan wajib menjaga sopan santun demi kenyamanan bersama!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Gaming & Roblox -->
+                <div id="tab-gaming" class="tab-content space-y-4 sm:space-y-6 hidden">
+                    <div class="flex items-center justify-between border-b border-ghoul-border pb-3 sm:pb-4">
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <span class="text-ghoul-red text-lg sm:text-xl font-bold">#</span>
+                            <h3 class="font-rajdhani text-lg sm:text-xl font-bold text-white tracking-wide">mabar-roblox-gaming</h3>
+                        </div>
+                        <span class="text-[10px] sm:text-xs text-gray-400 bg-white/5 px-2.5 py-1 rounded-full">Game Night</span>
+                    </div>
+                    
+                    <div class="space-y-3 font-sans text-xs sm:text-sm">
+                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-900 flex items-center justify-center font-bold text-white shrink-0 text-xs sm:text-base">JS</div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white">Juuzou</span>
+                                    <span class="text-[9px] sm:text-[10px] text-gray-500">Hari ini 13:45</span>
+                                </div>
+                                <p class="text-gray-300 mt-0.5 leading-relaxed">Malam ini ada mabar Roblox seru! Siapa mau ikut? Langsung kirim username kalian di sini!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Bus Spotting -->
+                <div id="tab-busspotting" class="tab-content space-y-4 sm:space-y-6 hidden">
+                    <div class="flex items-center justify-between border-b border-ghoul-border pb-3 sm:pb-4">
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <span class="text-ghoul-red text-lg sm:text-xl font-bold">#</span>
+                            <h3 class="font-rajdhani text-lg sm:text-xl font-bold text-white tracking-wide">bus-spotting-nusantara</h3>
+                        </div>
+                        <span class="text-[10px] sm:text-xs text-amber-400 bg-amber-950/40 border border-amber-900/50 px-2.5 py-1 rounded-full">Hobi & Transport</span>
+                    </div>
+                    
+                    <div class="space-y-3 font-sans text-xs sm:text-sm">
+                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-900 flex items-center justify-center font-bold text-white shrink-0 text-xs sm:text-base">BS</div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white">BusManialover</span>
+                                    <span class="text-[9px] sm:text-[10px] text-gray-500">Hari ini 11:20</span>
+                                </div>
+                                <p class="text-gray-300 mt-0.5 leading-relaxed">Baru dapat foto unit Jetbus 5 terbaru melintas di tol Trans Java Sekawan Pulau Jawa! Keren banget livery-nya 🚍💨</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Announcements -->
+                <div id="tab-announcements" class="tab-content space-y-4 sm:space-y-6 hidden">
+                    <div class="flex items-center justify-between border-b border-ghoul-border pb-3 sm:pb-4">
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <span class="text-ghoul-red text-lg sm:text-xl font-bold">#</span>
+                            <h3 class="font-rajdhani text-lg sm:text-xl font-bold text-white tracking-wide">pengumuman-resmi</h3>
+                        </div>
+                        <span class="text-[10px] sm:text-xs text-red-400 bg-red-950/40 border border-red-900/50 px-2.5 py-1 rounded-full">Resmi</span>
+                    </div>
+                    
+                    <div class="space-y-3 font-sans text-xs sm:text-sm">
+                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-gradient-to-r from-red-950/30 to-transparent border-l-4 border-ghoul-red">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-ghoul-red flex items-center justify-center font-bold text-white shrink-0 text-xs sm:text-base"><i class="fa-solid fa-bullhorn"></i></div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white">NESCAFE BOT</span>
+                                    <span class="text-[9px] sm:text-[10px] text-ghoul-red font-semibold">SISTEM</span>
+                                </div>
+                                <p class="text-gray-300 mt-0.5 leading-relaxed">🎉 Event Kolaborasi Nescafe Squad x Sekawan Pulau Jawa resmi dimulai! Dapatkan role khusus partner sekarang.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Quick Join Inside Showcase -->
+                <div class="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-ghoul-border flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                    <span class="text-xs text-gray-400">Ingin bergabung dalam keseruan? Masuk ke Discord kami sekarang.</span>
+                    <button onclick="goToDiscord()" onmouseenter="playSFX('hover')" class="touch-target w-full sm:w-auto px-5 py-2.5 rounded-xl bg-ghoul-red hover:bg-rose-600 active:scale-95 text-white text-xs font-bold uppercase tracking-wider shadow-neon transition-all">
+                        Gabung Server
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Server Rules Section (Accordion) -->
+    <section id="rules" class="py-16 sm:py-24 relative z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
+                <span class="text-[10px] sm:text-xs font-bold tracking-widest text-ghoul-red uppercase px-3 py-1 rounded-full bg-ghoul-red/10 border border-ghoul-red/30">TATA TERTIB</span>
+                <h2 class="font-rajdhani text-2xl sm:text-4xl lg:text-5xl font-bold text-white uppercase">PERATURAN SERVER</h2>
+                <p class="text-gray-400 text-xs sm:text-base">Patuhi tata tertib komunitas agar suasana server tetap aman dan menyenangkan bagi semua member.</p>
+            </div>
+
+            <!-- Accordion List -->
+            <div class="space-y-3 sm:space-y-4">
+                
+                <!-- Rule 1: Dilarang Rusuh & Drama -->
+                <div class="glass-panel rounded-xl overflow-hidden border border-ghoul-border transition-all duration-300">
+                    <button onclick="toggleAccordion('rule-1')" onmouseenter="playSFX('hover')" class="touch-target w-full p-4 sm:p-5 text-left flex items-center justify-between font-rajdhani font-bold text-base sm:text-lg text-white hover:text-ghoul-red transition-colors">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <span class="text-ghoul-red font-mono text-xs sm:text-sm shrink-0">01</span>
+                            <span class="truncate">Dilarang Rusuh, Drama, & Toxic Berlebihan</span>
+                        </div>
+                        <i id="icon-rule-1" class="fa-solid fa-chevron-down text-xs sm:text-sm text-gray-400 transition-transform duration-300 shrink-0 ml-2"></i>
+                    </button>
+                    <div id="content-rule-1" class="hidden px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-gray-400 border-t border-ghoul-border/50 pt-3 leading-relaxed">
+                        Segala bentuk keonaran, provokasi, drama antar member, tuduhan tanpa bukti, atau ujaran kebencian tidak ditoleransi. Pelanggar akan langsung dijatuhi hukuman mute/kick/ban.
+                    </div>
+                </div>
+
+                <!-- Rule 2: Sopan Santun -->
+                <div class="glass-panel rounded-xl overflow-hidden border border-ghoul-border transition-all duration-300">
+                    <button onclick="toggleAccordion('rule-2')" onmouseenter="playSFX('hover')" class="touch-target w-full p-4 sm:p-5 text-left flex items-center justify-between font-rajdhani font-bold text-base sm:text-lg text-white hover:text-ghoul-red transition-colors">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <span class="text-ghoul-red font-mono text-xs sm:text-sm shrink-0">02</span>
+                            <span class="truncate">Jaga Sopan Santun & Saling Menghargai</span>
+                        </div>
+                        <i id="icon-rule-2" class="fa-solid fa-chevron-down text-xs sm:text-sm text-gray-400 transition-transform duration-300 shrink-0 ml-2"></i>
+                    </button>
+                    <div id="content-rule-2" class="hidden px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-gray-400 border-t border-ghoul-border/50 pt-3 leading-relaxed">
+                        Hormati sesama member, staff, serta mitra kami dari Sekawan Pulau Jawa. Gunakan bahasa yang teratur dan ramah, terutama saat di Voice Channel (VC).
+                    </div>
+                </div>
+
+                <!-- Rule 3: Dilarang Promosi & Spam -->
+                <div class="glass-panel rounded-xl overflow-hidden border border-ghoul-border transition-all duration-300">
+                    <button onclick="toggleAccordion('rule-3')" onmouseenter="playSFX('hover')" class="touch-target w-full p-4 sm:p-5 text-left flex items-center justify-between font-rajdhani font-bold text-base sm:text-lg text-white hover:text-ghoul-red transition-colors">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <span class="text-ghoul-red font-mono text-xs sm:text-sm shrink-0">03</span>
+                            <span class="truncate">Dilarang Spam & Promosi Liar Tanpa Izin</span>
+                        </div>
+                        <i id="icon-rule-3" class="fa-solid fa-chevron-down text-xs sm:text-sm text-gray-400 transition-transform duration-300 shrink-0 ml-2"></i>
+                    </button>
+                    <div id="content-rule-3" class="hidden px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-gray-400 border-t border-ghoul-border/50 pt-3 leading-relaxed">
+                        Dilarang mengirimkan link server Discord lain, promosi jual-beli pribadi, atau melakukan spam pesan/mention berulang kali tanpa arahan Admin.
+                    </div>
+                </div>
+
+                <!-- Rule 4: Jalur Channel & NSFW -->
+                <div class="glass-panel rounded-xl overflow-hidden border border-ghoul-border transition-all duration-300">
+                    <button onclick="toggleAccordion('rule-4')" onmouseenter="playSFX('hover')" class="touch-target w-full p-4 sm:p-5 text-left flex items-center justify-between font-rajdhani font-bold text-base sm:text-lg text-white hover:text-ghoul-red transition-colors">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <span class="text-ghoul-red font-mono text-xs sm:text-sm shrink-0">04</span>
+                            <span class="truncate">Gunakan Channel Sesuai Peruntukan</span>
+                        </div>
+                        <i id="icon-rule-4" class="fa-solid fa-chevron-down text-xs sm:text-sm text-gray-400 transition-transform duration-300 shrink-0 ml-2"></i>
+                    </button>
+                    <div id="content-rule-4" class="hidden px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-gray-400 border-t border-ghoul-border/50 pt-3 leading-relaxed">
+                        Kirimkan meme di channel meme, obrolan Roblox di channel gaming, dan konten dewasa hanya di tempat yang ditandai NSFW (jika ada).
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Call to Action Banner -->
+    <section id="community" class="py-12 sm:py-20 relative z-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-2xl sm:rounded-3xl p-6 sm:p-12 border border-ghoul-red/40 shadow-neon-lg relative overflow-hidden text-center bg-gradient-to-b from-ghoul-card to-black">
+                <!-- Ambient glow -->
+                <div class="absolute -top-24 -right-24 w-60 sm:w-80 h-60 sm:h-80 bg-ghoul-red/20 rounded-full blur-[90px] pointer-events-none"></div>
+                
+                <div class="relative z-10 max-w-2xl mx-auto space-y-4 sm:space-y-6">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-ghoul-red to-black mx-auto flex items-center justify-center shadow-neon shrink-0">
+                        <i class="fa-brands fa-discord text-white text-2xl sm:text-3xl"></i>
+                    </div>
+                    
+                    <h2 class="font-rajdhani text-2xl sm:text-4xl lg:text-5xl font-bold text-white uppercase tracking-wide">
+                        MASUK KE DISTRIK 20
+                    </h2>
+                    
+                    <p class="text-gray-300 text-xs sm:text-base leading-relaxed">
+                        Gabung bersama gamer, penikmat anime, bus spotter, dan teman-teman dari NESCAFE SQUAD & Sekawan Pulau Jawa. Tempat dudukmu sudah siap.
+                    </p>
+
+                    <!-- Prominent Collaboration Banner Text -->
+                    <div class="inline-block px-4 py-1.5 rounded-full bg-ghoul-red/20 border border-ghoul-red/40 text-ghoul-red font-bold text-xs uppercase tracking-widest">
+                        <i class="fa-solid fa-handshake mr-1.5"></i> Collaborated with Sekawan Pulau Jawa
+                    </div>
+                    
+                    <div class="pt-2 sm:pt-4 flex justify-center">
+                        <button onclick="goToDiscord()" onmouseenter="playSFX('hover')" class="touch-target w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-ghoul-red hover:bg-rose-600 active:scale-95 text-white font-bold text-xs sm:text-sm tracking-wider uppercase shadow-neon transition-all flex items-center justify-center space-x-3">
+                            <i class="fa-brands fa-discord text-lg sm:text-xl"></i>
+                            <span>Terima Undangan Discord</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 sm:py-12 border-t border-ghoul-border/60 bg-black/80 text-gray-500 text-xs sm:text-sm relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 text-center md:text-left">
+            <div class="flex items-center space-x-3">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-ghoul-red flex items-center justify-center text-white shrink-0">
+                    <i class="fa-solid fa-mug-hot text-xs"></i>
+                </div>
+                <div>
+                    <span class="font-rajdhani font-bold text-white tracking-wider uppercase text-sm sm:text-base block">NESCAFE SQUAD</span>
+                    <span class="text-[9px] text-ghoul-red font-semibold block">Collaborated with Sekawan Pulau Jawa</span>
+                </div>
+            </div>
+            <p class="text-[10px] sm:text-xs text-gray-500 max-w-md">
+                &copy; 2026 NESCAFE SQUAD Discord Community x Sekawan Pulau Jawa. Fan-made Tokyo Ghoul theme landing page.
+            </p>
+
+            <div class="flex items-center space-x-5 text-gray-400">
+                <a href="#hero" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="touch-target hover:text-ghoul-red transition-colors flex items-center justify-center" aria-label="Discord"><i class="fa-brands fa-discord text-base sm:text-lg"></i></a>
+                <a href="#hero" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="touch-target hover:text-ghoul-red transition-colors flex items-center justify-center" aria-label="Twitter"><i class="fa-brands fa-twitter text-base sm:text-lg"></i></a>
+                <a href="#hero" onmouseenter="playSFX('hover')" onclick="playSFX('click')" class="touch-target hover:text-ghoul-red transition-colors flex items-center justify-center" aria-label="Instagram"><i class="fa-brands fa-instagram text-base sm:text-lg"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Sound Engine & Interactive Logic -->
+    <script>
+        // Web Audio API Synthesizer
+        let audioCtx = null;
+        let isSFXEnabled = true;
+        let masterVolume = 0.3;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Global Audio Unlock Listener for Mobile Devices & Desktops
+        const unlockAudio = () => {
+            initAudio();
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
+
+        function toggleSFX() {
+            initAudio();
+            isSFXEnabled = !isSFXEnabled;
+            const icon = document.getElementById('sfx-icon');
+            const status = document.getElementById('sfx-status');
+
+            if (isSFXEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-xs sm:text-sm';
+                if (status) {
+                    status.textContent = 'SFX: ON';
+                    status.className = 'text-xs font-bold text-ghoul-red';
+                }
+                playSFX('click');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-xs sm:text-sm';
+                if (status) {
+                    status.textContent = 'SFX: OFF';
+                    status.className = 'text-xs font-bold text-gray-500';
+                }
+            }
+        }
+
+        function updateVolume(val) {
+            masterVolume = parseFloat(val);
+        }
+
+        // Sound Synthesis Function
+        function playSFX(type) {
+            if (!isSFXEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'hover') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1400, now + 0.04);
+                gain.gain.setValueAtTime(masterVolume * 0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+
+            } else if (type === 'click') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.06);
+                gain.gain.setValueAtTime(masterVolume * 0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.06);
+
+            } else if (type === 'tab') {
+                const osc1 = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(440, now);
+                osc1.frequency.setValueAtTime(880, now + 0.04);
+                gain.gain.setValueAtTime(masterVolume * 0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc1.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.08);
+
+            } else if (type === 'accordion') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(70, now + 0.09);
+                gain.gain.setValueAtTime(masterVolume * 0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.09);
+
+            } else if (type === 'invite') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(masterVolume * 0.45, now + 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // Mobile Menu Drawer Handler
+        function toggleMobileMenu() {
+            const drawer = document.getElementById('mobile-drawer');
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => drawer.classList.remove('opacity-0'), 10);
+                document.body.style.overflow = 'hidden';
+            } else {
+                drawer.classList.add('opacity-0');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+        }
+
+        // Redirect to Discord Link with Sound FX and Toast
+        function goToDiscord() {
+            playSFX('invite');
+            showToast();
+            setTimeout(() => {
+                window.open("https://discord.gg/dmjKj8RXf", "_blank");
+            }, 800);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-28', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-28', 'opacity-0');
+            }, 3000);
+        }
+
+        // Channel Showcase Tab Switcher
+        function switchTab(tabName) {
+            playSFX('tab');
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(el => el.classList.add('hidden'));
+
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-ghoul-red', 'text-white', 'shadow-neon');
+                btn.classList.add('glass-panel', 'text-gray-300');
+            });
+
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+
+            const activeBtn = document.getElementById('btn-' + tabName);
+            activeBtn.classList.remove('glass-panel', 'text-gray-300');
+            activeBtn.classList.add('bg-ghoul-red', 'text-white', 'shadow-neon');
+        }
+
+        // Accordion Rule Toggler
+        function toggleAccordion(ruleId) {
+            playSFX('accordion');
+            const content = document.getElementById('content-' + ruleId);
+            const icon = document.getElementById('icon-' + ruleId);
+
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        // Canvas Particles & Counters Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            let onlineCount = 1420;
+            const onlineElem = document.getElementById('online-counter');
+            
+            setInterval(() => {
+                const delta = Math.floor(Math.random() * 7) - 3;
+                onlineCount = Math.max(1390, onlineCount + delta);
+                if (onlineElem) {
+                    onlineElem.textContent = onlineCount.toLocaleString();
+                }
+            }, 4000);
+
+            // Responsive Particles Canvas
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            const particles = [];
+            const particleCount = window.innerWidth < 640 ? 20 : 35;
+
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 0.5,
+                    color: Math.random() > 0.35 ? '#e50914' : '#ffffff',
+                    speedY: Math.random() * 0.5 + 0.2,
+                    speedX: (Math.random() - 0.5) * 0.3,
+                    opacity: Math.random() * 0.6 + 0.2
+                });
+            }
+
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.opacity;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color === '#e50914' ? '#e50914' : 'transparent';
+                    ctx.fill();
+
+                    p.y -= p.speedY;
+                    p.x += p.speedX;
+
+                    if (p.y < 0) {
+                        p.y = canvas.height + 10;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+
+                requestAnimationFrame(animateParticles);
+            }
+
+            animateParticles();
+        });
+    </script>
+</body>
+</html>
